@@ -1,0 +1,162 @@
+import 'package:flutter/material.dart'; 
+import 'package:flutter_local_notifications/flutter_local_notifications.dart'; 
+ 
+void main() { 
+  runApp(const PrimeApp()); 
+} 
+ 
+class PrimeApp extends StatelessWidget { 
+  const PrimeApp({super.key}); 
+ 
+  @override 
+  Widget build(BuildContext context) { 
+    return MaterialApp( 
+      debugShowCheckedModeBanner: false, 
+      home: const PrimeScreen(), 
+    ); 
+  } 
+} 
+ 
+class PrimeScreen extends StatefulWidget { 
+  const PrimeScreen({super.key}); 
+ 
+  @override 
+  State<PrimeScreen> createState() => _PrimeScreenState(); 
+} 
+ 
+class _PrimeScreenState extends State<PrimeScreen> { 
+  final TextEditingController lowerController = TextEditingController(); 
+  final TextEditingController upperController = TextEditingController(); 
+ 
+  List<int> primes = []; 
+  bool isLoading = false; 
+ 
+  FlutterLocalNotificationsPlugin notificationsPlugin = 
+      FlutterLocalNotificationsPlugin(); 
+ 
+  @override 
+  void initState() { 
+    super.initState(); 
+    initializeNotification(); 
+  } 
+ 
+  void initializeNotification() async { 
+    const AndroidInitializationSettings androidSettings = 
+        AndroidInitializationSettings('@mipmap/ic_launcher'); 
+ 
+    const InitializationSettings settings = 
+        InitializationSettings(android: androidSettings); 
+ 
+    await notificationsPlugin.initialize(settings); 
+  } 
+ 
+  Future<void> showNotification() async { 
+    const AndroidNotificationDetails androidDetails = 
+        AndroidNotificationDetails( 
+      'prime_channel', 
+      'Prime Finder', 
+      importance: Importance.max, 
+      priority: Priority.high, 
+    ); 
+ 
+    const NotificationDetails details = 
+        NotificationDetails(android: androidDetails); 
+ 
+    await notificationsPlugin.show( 
+      0, 
+      'Prime Calculation Done    ', 
+      'Prime numbers are ready to view', 
+      details, 
+    ); 
+  } 
+ 
+  bool isPrime(int n) { 
+    if (n <= 1) return false; 
+    for (int i = 2; i <= n ~/ 2; i++) { 
+      if (n % i == 0) return false; 
+    } 
+    return true; 
+  } 
+ 
+  Future<void> findPrimesAsync(int low, int high) async { 
+    setState(() { 
+      isLoading = true; 
+      primes.clear(); 
+    }); 
+ 
+    await Future.delayed(const Duration(seconds: 1)); // simulate async work 
+ 
+    List<int> result = [];
+      for (int i = low; i <= high; i++) { 
+      if (isPrime(i)) { 
+        result.add(i); 
+      } 
+    } 
+ 
+    setState(() { 
+      primes = result; 
+      isLoading = false; 
+    }); 
+ 
+    showNotification(); 
+  } 
+ 
+  void startCalculation() { 
+    int low = int.parse(lowerController.text); 
+    int high = int.parse(upperController.text); 
+    findPrimesAsync(low, high); 
+  } 
+ 
+  @override 
+  Widget build(BuildContext context) { 
+    return Scaffold( 
+      appBar: AppBar( 
+        title: const Text('Prime Number Finder'), 
+        backgroundColor: Colors.green, 
+      ), 
+      body: Padding( 
+        padding: const EdgeInsets.all(16), 
+        child: Column( 
+          children: [ 
+            TextField( 
+              controller: lowerController, 
+              keyboardType: TextInputType.number, 
+              decoration: const InputDecoration( 
+                labelText: 'Lower Range', 
+                border: OutlineInputBorder(), 
+              ), 
+            ), 
+            const SizedBox(height: 10), 
+            TextField( 
+              controller: upperController, 
+              keyboardType: TextInputType.number, 
+              decoration: const InputDecoration( 
+                labelText: 'Upper Range', 
+                border: OutlineInputBorder(), 
+              ), 
+            ), 
+     const SizedBox(height: 20), 
+            ElevatedButton( 
+              onPressed: startCalculation, 
+              child: const Text('Find Primes'), 
+            ), 
+            const SizedBox(height: 20), 
+            if (isLoading) 
+              const CircularProgressIndicator() 
+            else 
+              Expanded( 
+                child: ListView.builder( 
+                  itemCount: primes.length, 
+                  itemBuilder: (context, index) { 
+                    return ListTile( 
+                      title: Text(primes[index].toString()), 
+                    ); 
+                  }, 
+                ), 
+              ), 
+          ], 
+        ), 
+      ), 
+    ); 
+  } 
+} 
